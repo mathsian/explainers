@@ -1,17 +1,20 @@
-from dash import Dash, html, dcc, callback, Output, Input, State
+from dash import html, dcc, callback, Output, Input, State, register_page
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
+from os import path
 
 numeric_features = ['Wing', 'Weight', 'Culmen', 'Hallux', 'Tail']
 species = ['RT', 'CH', 'SS']
 
-hawks_data = pd.read_csv('Hawks.csv').dropna(subset=numeric_features)
+HAWKS_CSV = path.join(path.dirname(__file__), '../data/Hawks.csv')
+
+hawks_data = pd.read_csv(HAWKS_CSV).dropna(subset=numeric_features)
+
+register_page(__name__)
 
 for s in species:
     hawks_data[s] = (hawks_data['Species'] == s).map({True: s, False: f'Not {s}'})
-
-app = Dash(__name__, url_base_pathname='/testing/', external_stylesheets=[dbc.themes.CERULEAN], title='Hawk classification')
 
 def node_card_factory(id_stub):
     header = dbc.CardHeader([
@@ -32,7 +35,7 @@ def node_card_factory(id_stub):
                 dcc.Graph(id=f'{id_stub}-graph', config={'displayModeBar': False, 'staticPlot': True}),
                 dcc.Slider(0, 100, id=f'{id_stub}-slider'),
             ]),
-            ]) 
+            ])
     return dbc.Card([header, body])
 
 def leaf_card_factory(id_stub):
@@ -56,7 +59,7 @@ first_card = node_card_factory("first-feature")
 second_cards = [node_card_factory(f'second-{side}') for side in ['left', 'right']]
 leaf_cards = [leaf_card_factory(f'leaf-{n}') for n in [1, 2, 3, 4]]
 
-app.layout = dbc.Container([
+layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H1(children='Hawk classification', style={'textAlign': 'center'})
@@ -74,7 +77,7 @@ app.layout = dbc.Container([
     ]),
     dbc.Row([
         dbc.Col([
-            dbc.CardGroup(leaf_cards) 
+            dbc.CardGroup(leaf_cards)
         ]),
     ]),
     dbc.Row([
@@ -229,9 +232,5 @@ def update_crosstab(first_feature, first_feature_value, second_left_feature, sec
     leaf_3_table = hawks_data[(hawks_data[first_feature] > first_feature_value) & (hawks_data[second_right_feature] <= second_right_value)].value_counts('Species').rename('Count').to_markdown()
     leaf_4_label = f'{first_feature} &gt; {first_feature_value} and {second_right_feature} &gt; {second_right_value}'
     leaf_4_table = hawks_data[(hawks_data[first_feature] > first_feature_value) & (hawks_data[second_right_feature] > second_right_value)].value_counts('Species').rename('Count').to_markdown()
-    return confusion_matrix, leaf_1_label, leaf_2_label, leaf_3_label, leaf_4_label, leaf_1_table, leaf_2_table, leaf_3_table, leaf_4_table 
-
-if __name__ == '__main__':
-    app.run(debug=True, port=8051)
-
+    return confusion_matrix, leaf_1_label, leaf_2_label, leaf_3_label, leaf_4_label, leaf_1_table, leaf_2_table, leaf_3_table, leaf_4_table
 

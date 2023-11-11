@@ -1,15 +1,18 @@
-from dash import Dash, html, dcc, callback, Output, Input
+from dash import html, dcc, callback, Output, Input, register_page
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
+from os import path
 
-hawks_data = pd.read_csv('Hawks.csv').dropna(subset=['Wing', 'Weight'])
+HAWKS_CSV = path.join(path.dirname(__file__), '../data/Hawks.csv')
+
+hawks_data = pd.read_csv(HAWKS_CSV).dropna(subset=['Wing', 'Weight'])
 
 hawks_data['RT'] = (hawks_data['Species'] == 'RT').map({True: 'RT', False: 'Not RT'})
 
-app = Dash(__name__, url_base_pathname='/hawks/', external_stylesheets=[dbc.themes.CERULEAN], title='Hawk classification')
+register_page(__name__)
 
-app.layout = dbc.Container([
+layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H1(children='Hawk classification', style={'textAlign': 'center'})
@@ -18,18 +21,18 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H2("Wing length distribution"),
-            dcc.Graph(id='wing-graph'),
+            dcc.Graph(id={'page': 'hawks_one', 'type': 'graph', 'name': 'wing-graph'}),
             html.Br(),
-            dcc.Slider(0, hawks_data['Wing'].max(), value=hawks_data['Wing'].mean().round(), id='wing-slider'),
+            dcc.Slider(0, hawks_data['Wing'].max(), value=hawks_data['Wing'].mean().round(), id={'page': 'hawks_one', 'type': 'slider', 'name': 'wing-slider'}),
             html.Br(),
             html.H2("Weight distribution"),
-            dcc.Graph(id='weight-graph'),
+            dcc.Graph(id={'page': 'hawks_one', 'type': 'graph', 'name': 'weight-graph'}),
             html.Br(),
-            dcc.Slider(0, hawks_data['Weight'].max(), value=hawks_data['Weight'].mean().round(), id='weight-slider'),
+            dcc.Slider(0, hawks_data['Weight'].max(), value=hawks_data['Weight'].mean().round(), id={'page': 'hawks_one', 'type': 'slider', 'name': 'weight-slider'}),
             ], width=8),
         dbc.Col([
             html.H2("Confusion Matrix"),
-            html.Div(id="confusion-matrix")
+            html.Div(id={'page': 'hawks_one', 'type': 'div', 'name': 'confusion-matrix-div'})
             ],
             width=4)
         ])
@@ -37,11 +40,11 @@ app.layout = dbc.Container([
 
 @callback(
         [
-        Output('wing-graph', 'figure'),
-        Output('weight-graph', 'figure'),
+        Output({'page': 'hawks_one', 'type': 'graph', 'name': 'wing-graph'}, 'figure'),
+        Output({'page': 'hawks_one', 'type': 'graph', 'name': 'weight-graph'}, 'figure'),
         ],[
-        Input('wing-slider', 'value'),
-        Input('weight-slider', 'value'),
+        Input({'page': 'hawks_one', 'type': 'slider', 'name': 'wing-slider'}, 'value'),
+        Input({'page': 'hawks_one', 'type': 'slider', 'name': 'weight-slider'}, 'value'),
         ]
 )
 def update_graphs(wing_value, weight_value):
@@ -52,10 +55,10 @@ def update_graphs(wing_value, weight_value):
     return wing_graph, weight_graph
 
 @callback(
-        Output('confusion-matrix', 'children'),
+        Output({'page': 'hawks_one', 'type': 'div', 'name': 'confusion-matrix-div'}, 'children'),
         [
-            Input('wing-slider', 'value'),
-            Input('weight-slider', 'value')
+        Input({'page': 'hawks_one', 'type': 'slider', 'name': 'wing-slider'}, 'value'),
+        Input({'page': 'hawks_one', 'type': 'slider', 'name': 'weight-slider'}, 'value'),
         ]
         )
 def update_crosstab(wing_value, weight_value):
@@ -64,8 +67,3 @@ def update_crosstab(wing_value, weight_value):
     crosstab.columns = pd.MultiIndex.from_tuples([('Predicted', c) for c in crosstab.columns])
     confusion_matrix = dbc.Table.from_dataframe(crosstab, index=True)
     return confusion_matrix
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
