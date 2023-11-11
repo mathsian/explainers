@@ -1,7 +1,7 @@
 from dash import Dash, html, dcc, page_registry, page_container
 import dash_bootstrap_components as dbc
 
-app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 server = app.server
 
@@ -26,4 +26,4 @@ app.layout = dbc.Container(
         )
 
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8100)
+    app.run(debug=True, host='0.0.0.0', port=8101)
